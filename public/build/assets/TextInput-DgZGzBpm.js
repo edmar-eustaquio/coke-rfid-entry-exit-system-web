@@ -1,0 +1,1 @@
+import{r as e,j as o}from"./app-XlSfP4sL.js";const p=e.forwardRef(function({type:s="text",className:f="",isFocused:r=!1,...u},n){const t=e.useRef(null);return e.useImperativeHandle(n,()=>({focus:()=>t.current?.focus()})),e.useEffect(()=>{r&&t.current?.focus()},[r]),o.jsx("input",{...u,type:s,className:"rounded-md shadow-sm bg-[#1c1f22] "+f,ref:t})});export{p as T};
