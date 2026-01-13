@@ -153,7 +153,7 @@ export default function Index({ LOCATIONS }) {
                         {/* <option value="Site">Site</option> */}
                         <option value="Parking">Parking</option>
                         <option value="Dock">Dock</option>
-                        <option value="Yard">Yard</option>
+                        {/* <option value="Yard">Yard</option> */}
                     </select>
                 </div>
                 <div className="shadow-lg overflow-auto shadow-white/50 border rounded-lg mt-4 border-[#1c1f22]">

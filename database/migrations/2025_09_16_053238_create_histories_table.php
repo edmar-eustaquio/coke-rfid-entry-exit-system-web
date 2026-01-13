@@ -25,6 +25,9 @@ return new class extends Migration
             $table->string('location');
             $table->string('station');
             $table->string('current_station')->nullable();
+            $table->string('entry_or_exit_site')->nullable();
+            $table->string('entry_error')->nullable();
+            $table->string('exit_error')->nullable();
             $table->timestamps();
         });
     }

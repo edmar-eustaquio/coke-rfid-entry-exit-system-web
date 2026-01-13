@@ -210,7 +210,7 @@ class HistoryService {
 
         $antennas = $antennaRepo->getByReader($reader->id);
         if (!$antennas || $antennas->isEmpty()) return;
-
+        
         $antennaIndex = [];
         foreach ($antennas->toArray() as $a)
             $antennaIndex[$a["port"]] = $a;
@@ -245,13 +245,11 @@ class HistoryService {
         $time = $now->format('h:i:s A');
 
         $insertData = [];
-        $powerBIData = [];
 
         foreach ($rfidsByPort as $port => $rfidValues) {
             if (!isset($antennaIndex[$port])) continue;
 
             $antenna = $antennaIndex[$port];
-            
             $trucks = $truckRepo->getWhereInRfidAndDoesntExistsInLast(
                 'in',
                 $reader->location_code,
@@ -261,22 +259,23 @@ class HistoryService {
             if ($trucks->isEmpty()) continue;
 
             foreach ($trucks as $truck) {
-                $powerBIData[] = [
-                    "Vehicle ID" => (int) $truck->vehicle_id,
-                    "Plate Number" => $truck->plate_no,
-                    "Variable Capacity" => $truck->capacity,
-                    "Service Agent" => $truck->agent,
-                    "Transport Planning Point" => (int)$truck->location_code,
-                    "Truck Source Location" => $truck->location,
-                    "Service Provider" => $truck->provider,
-                    "Date" => $date,
-                    "Time" => $time,
-                    "Type" => $antenna["type"],
-                    "RFID Location" => $reader->location_code,
-                    "RFID Location Name" => $reader->location,
-                    "Station" => $antenna["station"],
-                ];
-
+                if ($truck->latestHistory && $antenna['entry_or_exit_site'] != 'Entry' && $truck->latestHistory->entry_or_exit_site == 'Exit') {
+                    $insertData[] = [
+                        'location'       => $reader->location,
+                        'location_code'  => $reader->location_code,
+                        'station'        => $antenna["station"],
+                        'truck_id'       => $truck->id,
+                        'type'           => 'in',
+                        'date_scan'      => $now,
+                        'time_scan'      => $now,
+                        'out_date_scan'      => $now,
+                        'out_time_scan'      => $now,
+                        'current_station'    => $antenna["station"],
+                        'entry_or_exit_site' => 'Entry',
+                        'entry_error' => 'No entry record found',
+                    ];
+                }
+                
                 if ($antenna["station"] !== 'Exit') {
                     $insertData[] = [
                         'location'       => $reader->location,
@@ -286,6 +285,11 @@ class HistoryService {
                         'type'           => 'in',
                         'date_scan'      => $now,
                         'time_scan'      => $now,
+                        'out_date_scan'      => null,
+                        'out_time_scan'      => null,
+                        'current_station'    => null,
+                        'entry_or_exit_site' => $antenna['entry_or_exit_site'],
+                        'entry_error' => null,
                     ];
                 }
 
@@ -296,12 +300,20 @@ class HistoryService {
                     || $truck->latestHistory->location_code != $reader->location_code
                 ) continue;
 
-                $historyRepository->updateOutById($truck->latestHistory->id, $now, $now, $antenna["station"]);
+                $historyRepository->updateOutById(
+                    $truck->latestHistory->id, 
+                    $now, 
+                    $now, 
+                    $antenna["station"],
+                    $antenna['entry_or_exit_site'] == 'Entry' && $truck->latestHistory->entry_or_exit_site != 'Exit' 
+                        ? 'No exit record found' 
+                        : null
+                );
             }
         }
 
-        if (!$powerBIData) return;
-
+        if (empty($insertData)) return;
+        
         Cache::put("saved:" . $reader->arduino_id, true, now()->addSeconds(10));
 
         $this->repo->insert($insertData);

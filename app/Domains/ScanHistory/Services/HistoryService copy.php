@@ -22,16 +22,21 @@ class HistoryService {
         // info($req->all()); return;
 
         $rfids  = [];
+        $RFID_START_VALUE = strtolower(env('RFID_START_VALUE', 'c0ca'));
+        $READER_SAVE_INTERVAL = (int) env("READER_SAVE_INTERVAL", "5");
 
         foreach ($req as $c) {
             $rfid = strtolower(trim($c));
 
-            // if (!str_starts_with($rfid, strtolower(env("RFID_START_VALUE", "c0ca")))) continue;
+            if ($rfid === '' || !str_starts_with($rfid, $RFID_START_VALUE)) continue;
 
             $cacheKey = "rfid:$rfid";
             if (Cache::has($cacheKey)) continue;
 
-            Cache::put($cacheKey, true, now()->addMinutes((int) env("READER_SAVE_INTERVAL")));
+            Cache::put($cacheKey, true, now()->addMinutes($READER_SAVE_INTERVAL));
+            
+            // if (in_array($rfid, $rfids)) continue;
+            
             $rfids[] = $rfid;
         }
         if (empty($rfids)) return [];
@@ -40,8 +45,9 @@ class HistoryService {
         $dataForPowerBI = [];
         $responseData = [];
 
-        $trucks = $truckRepo->getWhereInRfid($rfids);
-
+        $trucks = $truckRepo->getWhereInRfidAndDoesntExistsInLast($type, $code, $station, $rfids);
+        // $trucks = $truckRepo->getWhereInRfid($rfids);
+        
         if ($trucks->isEmpty()) return [];
 
         $loccode = (int) $code;
@@ -83,7 +89,7 @@ class HistoryService {
 
         Cache::put("saved:$location-$code-$station", true, now()->addSeconds(10));
         $this->repo->insert($data);
-        // PowerBIService::sendData($dataForPowerBI);
+        PowerBIService::sendData($dataForPowerBI);
 
         return $responseData;
     }
@@ -96,16 +102,18 @@ class HistoryService {
 
         $in  = [];
         $out = [];
+        $RFID_START_VALUE = strtolower(env('RFID_START_VALUE', 'c0ca'));
+        $READER_SAVE_INTERVAL = (int) env("READER_SAVE_INTERVAL", "5");
 
         foreach ($req as $c) {
             $rfid = strtolower(trim($c['data']['idHex']));
 
-            if (!str_starts_with($rfid, strtolower(env("RFID_START_VALUE", "c0ca")))) continue;
-
+            if ($rfid === '' || !str_starts_with($rfid, $RFID_START_VALUE)) continue;
+            
             $cacheKey = "rfid:$rfid";
             if (Cache::has($cacheKey)) continue;
 
-            Cache::put($cacheKey, true, now()->addMinutes((int) env("READER_SAVE_INTERVAL")));
+            Cache::put($cacheKey, true, now()->addMinutes($READER_SAVE_INTERVAL));
             
             if (in_array($c['data']['antenna'], $inAntennas)) {
                 $in[] = $rfid;
@@ -131,7 +139,8 @@ class HistoryService {
     {
         if (empty($rfids)) return;
 
-        $trucks = $truckRepo->getWhereInRfid($rfids);
+        $trucks = $truckRepo->getWhereInRfidAndDoesntExistsInLast($type, $code, $station, $rfids);
+        // $trucks = $truckRepo->getWhereInRfid($rfids);
 
         $loccode = (int) $code;
         $date = date('Y-m-d');

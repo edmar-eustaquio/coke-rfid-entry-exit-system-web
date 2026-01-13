@@ -56,6 +56,19 @@ export default function Dashboard({
         (_page, _size) => {
             if (isRefreshing.current) return;
 
+            if (allowedCodes == null && location_code == "") {
+                setData([]);
+                setTotalAndTotalPage(0);
+                setTotals({
+                    trucks_total: [],
+                    trucks_overall_total: 0,
+                    onsite_trucks_total: {},
+                    onsite_per_station: {},
+                    onsite_trucks_overall_total: 0,
+                });
+                return;
+            }
+
             isRefreshing.current = true;
             axios
                 .get(
@@ -99,13 +112,12 @@ export default function Dashboard({
     );
 
     useEffect(() => {
-        return;
         const intervalRef = { current: null };
 
         const startInterval = () => {
             intervalRef.current = setInterval(() => {
                 setRefetch((prev) => -prev);
-            }, REFRESH_SECONDS_DURATION * 100);
+            }, REFRESH_SECONDS_DURATION * 1000);
         };
 
         const stopInterval = () => {
@@ -160,6 +172,20 @@ export default function Dashboard({
         setDate("");
         setLocationCode("");
     };
+
+    const onExport = useCallback(() => {
+        document.location.href = route("dashboard.export", {
+            date: date,
+            capacity: capacity,
+            logistics_unit: logistics_unit,
+            cluster: cluster,
+            plate_no: plate_no,
+            page: page,
+            page_size: size,
+            location_codes:
+                location_code == "" ? allowedCodes ?? null : [location_code],
+        });
+    }, [page, size]);
 
     const formatDate = () => {
         const d = new Date();
@@ -383,9 +409,15 @@ export default function Dashboard({
 
                     <button
                         onClick={onReset}
-                        className="w-full mt-[3rem] py-2 border text-gray-800 rounded-[0.2rem] border-gray-500"
+                        className="w-full mt-[1.5rem] py-2 border text-gray-800 rounded-[0.2rem] border-gray-500"
                     >
                         Reset
+                    </button>
+                    <button
+                        onClick={onExport}
+                        className="w-full mt-[10px] py-2 border text-gray-800 rounded-[0.2rem] border-gray-500"
+                    >
+                        Export
                     </button>
                 </aside>
 
@@ -405,10 +437,10 @@ export default function Dashboard({
                                         <th className="min-w-[75px]">In</th>
                                         <th className="min-w-[75px]">Out</th>
                                         <th>Duration</th>
-                                        <th>Entry</th>
+                                        {/* <th>Entry</th> */}
                                         <th>Parking</th>
                                         <th>Dock</th>
-                                        <th>Yard</th>
+                                        {/* <th>Yard</th> */}
                                         <th>Exit</th>
                                     </tr>
                                 </thead>
@@ -427,10 +459,26 @@ export default function Dashboard({
                                             <td>{row.capacity}</td>
                                             <td>{row.location_source}</td>
                                             <td>{row.station}</td>
-                                            <td>{row.in}</td>
-                                            <td>{row.out ?? "-"}</td>
+                                            <td>
+                                                {row.entry_error ? (
+                                                    <p className="p-1 rounded-sm bg-red-200 text-red-700">
+                                                        {row.entry_error}
+                                                    </p>
+                                                ) : (
+                                                    row.in
+                                                )}
+                                            </td>
+                                            <td>
+                                                {row.exit_error ? (
+                                                    <p className="p-1 rounded-sm bg-red-200 text-red-700">
+                                                        {row.exit_error}
+                                                    </p>
+                                                ) : (
+                                                    row.out ?? "-"
+                                                )}
+                                            </td>
                                             <td>{row.duration ?? "-"}</td>
-                                            <td></td>
+                                            {/* <td></td> */}
                                             <td>
                                                 {row.current_station ==
                                                     "Parking" && <TruckIcon />}
@@ -439,10 +487,10 @@ export default function Dashboard({
                                                 {row.current_station ==
                                                     "Dock" && <TruckIcon />}
                                             </td>
-                                            <td>
+                                            {/* <td>
                                                 {row.current_station ==
                                                     "Yard" && <TruckIcon />}
-                                            </td>
+                                            </td> */}
                                             <td>
                                                 {row.current_station ==
                                                     "Exit" && <TruckIcon />}

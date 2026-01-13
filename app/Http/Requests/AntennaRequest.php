@@ -25,6 +25,7 @@ class AntennaRequest extends FormRequest
             "reader_id" => 'required|exists:readers,id',
             "port" => 'required|numeric',
             "station" => 'required',
+            "entry_or_exit_site" => 'nullable|string',
         ];
     }
 }

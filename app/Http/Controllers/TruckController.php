@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Domains\Truck\Services\TruckService;
 use App\Http\Requests\Truck\TruckRequest;
+use App\Http\Requests\Truck\UpdateTruckRequest;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 
@@ -37,7 +38,7 @@ class TruckController
         return response(null, 201);
     }
 
-    function update($id, TruckRequest $req):Response {
+    function update($id, UpdateTruckRequest $req):Response {
         $this->truckService->update($id, $req->validated());
         return response()->noContent();
     }

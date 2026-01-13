@@ -14,6 +14,7 @@ export default function Antenna({ reader }) {
     const [data, setD] = useState({
         port: "",
         station: "",
+        entry_or_exit_site: "",
     });
 
     const refresh = () => {
@@ -40,6 +41,7 @@ export default function Antenna({ reader }) {
         setD({
             port: "",
             station: "",
+            entry_or_exit_site: "",
         });
         setErrors({});
         setId(null);
@@ -63,6 +65,7 @@ export default function Antenna({ reader }) {
     const onEdit = (row) => {
         setData("port", row.port);
         setData("station", row.station);
+        setData("entry_or_exit_site", row.entry_or_exit_site ?? "");
 
         setId(row.id);
         setShowModal(true);
@@ -144,6 +147,7 @@ export default function Antenna({ reader }) {
                                 {/* <th>Scan Type</th>
                                 <th>Station Where Read</th> */}
                                 <th>Station</th>
+                                <th>Entry/Exit Site</th>
                                 <th>Action</th>
                             </tr>
                         </thead>
@@ -153,6 +157,7 @@ export default function Antenna({ reader }) {
                                 <tr key={antenna.id}>
                                     <td>{antenna.port}</td>
                                     <td>{antenna.station}</td>
+                                    <td>{antenna.entry_or_exit_site}</td>
                                     <td>
                                         <button
                                             onClick={() => onEdit(antenna)}
@@ -255,16 +260,42 @@ export default function Antenna({ reader }) {
                         <select
                             className="w-full rounded-md bg-[#1c1f22]"
                             value={data.station}
-                            onChange={(e) => setData("station", e.target.value)}
+                            onChange={(e) => {
+                                const v = e.target.value;
+                                if (v === "Exit") {
+                                    setData("entry_or_exit_site", "Exit");
+                                } else if (
+                                    data.entry_or_exit_site === "Exit" &&
+                                    v !== "Exit"
+                                ) {
+                                    setData("entry_or_exit_site", "");
+                                }
+                                setData("station", v);
+                            }}
                         >
                             <option value="">Select Station</option>
                             {/* <option value="Entry">Entry</option> */}
                             <option value="Parking">Parking</option>
                             <option value="Dock">Dock</option>
-                            <option value="Yard">Yard</option>
+                            {/* <option value="Yard">Yard</option> */}
                             <option value="Exit">Exit</option>
                         </select>
                         <FieldError errors={errors} name="station" />
+                    </div>
+
+                    <div className="mt-2">
+                        <label className="w-full">Entry/Exit Site</label>
+                        <select
+                            className="w-full rounded-md bg-[#1c1f22]"
+                            value={data.entry_or_exit_site}
+                            onChange={(e) =>
+                                setData("entry_or_exit_site", e.target.value)
+                            }
+                        >
+                            <option value="">None</option>
+                            <option value="Entry">Entry</option>
+                            <option value="Exit">Exit</option>
+                        </select>
                     </div>
 
                     <div className="flex justify-end gap-2 mt-3">

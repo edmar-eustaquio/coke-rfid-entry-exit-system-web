@@ -82,6 +82,44 @@ class EloquentHistoryRepository implements HistoryRepository {
     public function getForDashboard($req)
     {
         $page_size = $req['page_size'] ?? 20;
+
+        return $this->model
+            ->with('truck')
+            ->joinSub(
+                // Latest IN per truck
+                $this->model
+                    ->selectRaw('MAX(id) as id')
+                    ->where(fn($q) => $this->getForDashboardQuery($q, $req))
+                    ->where('entry_or_exit_site', 'Entry')
+                    ->groupBy('truck_id'),
+                'latest_in',
+                'histories.id',
+                '=',
+                'latest_in.id'
+            )
+            ->leftJoinSub(
+                // Latest OUT per truck
+                $this->model
+                    ->selectRaw('truck_id, MAX(id) as out_id')
+                    ->where(fn($q) => $this->getForDashboardQuery($q, $req))
+                    // ->where('entry_or_exit_site', 'Out')
+                    ->groupBy('truck_id'),
+                'latest_out',
+                'histories.truck_id',
+                '=',
+                'latest_out.truck_id'
+            )
+            ->leftJoin('histories as out_h', 'out_h.id', '=', 'latest_out.out_id')
+            ->orderByDesc('histories.date_scan')
+            ->orderByDesc('histories.time_scan')
+            ->offset(($req['page'] ?? 0) * $page_size)
+            ->limit($page_size)
+            ->get([
+                'histories.*',
+                'out_h.out_date_scan',
+                'out_h.out_time_scan',
+                'out_h.entry_or_exit_site',
+            ]);
         
         return $this->model
             ->with('truck')
@@ -96,10 +134,24 @@ class EloquentHistoryRepository implements HistoryRepository {
             //     ['time_scan', 'asc'],
             // ]);
     }
+    public function getForDashboardExport($req)
+    {
+        $page_size = $req['page_size'] ?? 20;
+        
+        return $this->model
+            ->with('truck')
+            ->where(fn ($q) => $this->getForDashboardQuery($q, $req))
+            ->orderByDesc('date_scan')
+            ->orderByDesc('time_scan')
+            ->offset(($req['page'] ?? 0) * $page_size)
+            ->limit($page_size)
+            ->get();
+    }
     public function getForDashboardTotal($req)
     {
         return $this->model
             ->where(fn ($q) => $this->getForDashboardQuery($q, $req))
+            ->groupBy('truck_id')
             ->count();
     }
 
@@ -115,15 +167,20 @@ class EloquentHistoryRepository implements HistoryRepository {
         $this->model->insert($data);
     }
 
-    function updateOutById($id, $date, $time, $station)
+    function updateOutById($id, $date, $time, $station, $exit_error = null)
     {
-        $this->model
-            ->where('id', $id)
-            ->update([
+        $data = [
                 'out_date_scan' => $date,
                 'out_time_scan' => $time,
-                'current_station' => $station
-            ]);
+                'current_station' => $station,
+                'exit_error' => $exit_error,
+        ];
+        if ($station === 'Exit'){
+            $data['entry_or_exit_site'] = 'Exit';
+        }
+        $this->model
+            ->where('id', $id)
+            ->update($data);
     }
 
 }

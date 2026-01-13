@@ -25,13 +25,17 @@ class DashboardController
 
         return response([
             "data" => $data,
-            'total_data' => $total_data,
+            'total_data' => $total,
             "trucks_total" => $trucks_total,
             "trucks_overall_total" => $total,
             "onsite_trucks_total" => $per_provider,
             "onsite_trucks_overall_total" => $onsite_total,
             "onsite_per_station" => $per_station,
         ]);
+    }
+
+    function export(Request $request, DashboardService $dashboardService, HistoryRepository $historyRepository){
+        return $dashboardService->export($request, $historyRepository);
     }
 
     

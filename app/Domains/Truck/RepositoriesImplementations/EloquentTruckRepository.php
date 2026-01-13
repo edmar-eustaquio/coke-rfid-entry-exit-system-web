@@ -60,7 +60,8 @@ class EloquentTruckRepository implements TruckRepository {
                     'histories.truck_id', 
                     'out_date_scan', 
                     'station',
-                    'histories.location_code'
+                    'histories.location_code',
+                    'entry_or_exit_site',
                 );
             }])
             ->whereIn('rfid', $rfids)

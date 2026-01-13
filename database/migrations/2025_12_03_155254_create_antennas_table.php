@@ -18,6 +18,7 @@ return new class extends Migration
                 ->onDelete("CASCADE");
             $table->integer('port');
             $table->string('station');
+            $table->string('entry_or_exit_site')->nullable();
             $table->timestamps();
         });
     }

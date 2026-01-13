@@ -19,6 +19,9 @@ class History extends Model
         'out_date_scan',
         'out_time_scan',
         'current_station',
+        'entry_or_exit_site',
+        'entry_error',
+        'exit_error',
     ];
 
     public function truck(){

@@ -10,5 +10,6 @@ class Antenna extends Model
         "reader_id",
         "port",
         "station",
+        'entry_or_exit_site',
     ];  
 }
